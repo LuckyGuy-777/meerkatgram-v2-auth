@@ -3,28 +3,28 @@ package com.meerkatgramv2auth.global.response;
 
 import com.meerkatgramv2auth.global.response.constant.CustomResponseCode;
 
-public record GlobalRes<T>(
+public record GlobalResponseDTO<T>(
         String code
         ,String message,
         T data
 ) {
 
-    public static<T> GlobalRes<T> from(CustomResponseCode customResponseCode,T data) {
-        return new GlobalRes<T>(customResponseCode.getCode(), customResponseCode.name(),data);
+    public static<T> GlobalResponseDTO<T> from(CustomResponseCode customResponseCode, T data) {
+        return new GlobalResponseDTO<T>(customResponseCode.getCode(), customResponseCode.name(),data);
     }
 
     // 오버로딩(파라미터가 다르다)
-    public static GlobalRes<Void> from(CustomResponseCode customResponseCode) {
-        return new GlobalRes<Void>(customResponseCode.getCode(), customResponseCode.name(),null);
+    public static GlobalResponseDTO<Void> from(CustomResponseCode customResponseCode) {
+        return new GlobalResponseDTO<Void>(customResponseCode.getCode(), customResponseCode.name(),null);
     }
 
-    public static <T> GlobalRes<T> success(T data){
-        return GlobalRes.<T>from(CustomResponseCode.SUCCESS, data);
+    public static <T> GlobalResponseDTO<T> success(T data){
+        return GlobalResponseDTO.<T>from(CustomResponseCode.SUCCESS, data);
     }
 
 
-    public static GlobalRes<Void> success() {
-        return GlobalRes.<Void>from(CustomResponseCode.SUCCESS);
+    public static GlobalResponseDTO<Void> success() {
+        return GlobalResponseDTO.<Void>from(CustomResponseCode.SUCCESS);
     }
 
 }

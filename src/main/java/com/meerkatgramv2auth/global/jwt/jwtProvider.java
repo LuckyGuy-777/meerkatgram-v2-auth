@@ -2,7 +2,8 @@ package com.meerkatgramv2auth.global.jwt;
 
 
 import com.meerkatgramv2auth.domain.user.entity.User;
-import io.jsonwebtoken.Jwts;
+import com.meerkatgramv2auth.global.errors.custom.InvalidTokenException;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
@@ -53,6 +54,28 @@ public class jwtProvider {
                 .claim("role", user.getRole()) // 프라이빗 클레임. 키와 값으로 설정함
                 .signWith(secretKey) // 시그니처 작성. 시그니쳐에, 시크릿 키를 줌
                 .compact();
+    }
+
+
+    // 클레임 추출
+    public Claims extractClaims(String token) {
+        try {
+            return Jwts.parser()
+                    .verifyWith(this.secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload()
+                    ;
+        } catch (ExpiredJwtException e) {
+            throw new InvalidTokenException("토큰이 만료 되었습니다.");
+        } catch (UnsupportedJwtException e) {
+            throw new InvalidTokenException("서명이 위조된 되었습니다.");
+        } catch (MalformedJwtException e) {
+            throw new InvalidTokenException("토큰 형식이 올바르지 않습니다.");
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new InvalidTokenException("토큰 검증에 실패 했습니다..");
+        }
+
     }
 }
 

@@ -6,8 +6,10 @@ import com.meerkatgramv2auth.domain.auth.request.LoginRequestDTO;
 import com.meerkatgramv2auth.domain.auth.response.AuthResponseDTO;
 import com.meerkatgramv2auth.domain.user.entity.User;
 import com.meerkatgramv2auth.global.cookie.CookieManager;
+import com.meerkatgramv2auth.global.errors.custom.InvalidTokenException;
 import com.meerkatgramv2auth.global.errors.custom.NotRegisteredException;
 import com.meerkatgramv2auth.global.jwt.jwtProvider;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -37,6 +39,37 @@ public class AuthService {
         return this.generateAuthentication(response,user);   // 컨트롤러에게 전달
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    public AuthResponseDTO reissue(HttpServletRequest request, HttpServletResponse response){
+        // 쿠키 리프래시토큰 획득
+        String refreshToken = cookieManager.getRefreshTokenToCookie(request)
+                .orElseThrow(() -> new InvalidTokenException("리프레시 토큰 없음"));
+        
+        // 해당 유저의 아이디를 long 으로 파싱 해서 가져옴
+        long userId = Long.parseLong(jwtProvider.extractClaims(refreshToken).getSubject());
+        
+        // 유저 획득 및 가입 여부 확인
+        User user = authRepository.findById(userId)
+                .orElseThrow(() -> new InvalidTokenException("유효하지 않은 회원의 토큰입니다."));
+
+        // 비로그인 상태 확인
+        // ->  DB 에 리프레시토큰 컬럼이 NULL 인지, 값이 있는지 확인함으로서 비로그인상태 확인
+        if(user.getRefreshToken() == null){
+            throw new InvalidTokenException("비로그인 상태입니다.");
+        }
+
+        // 리프레시 토큰 일치 확인
+        // -> 유저가 보낸 리프레시토큰과, 유저에 있는 리프레시토큰이 일치하는지 비교.
+        if(!refreshToken.equals(user.getRefreshToken())){
+            throw new InvalidTokenException("토큰 불일치 입니다.");
+        }
+
+        // 인증정보 생성 및 리턴
+        // -> 이 return 까지 오게되면, 문제없는 사용자. 인증생성에, 응답객체와, 유저를 반환함
+        return this.generateAuthentication(response, user);
+
+    }
+
     private AuthResponseDTO generateAuthentication(HttpServletResponse response, User user){
         //토큰 생성
         String accessToken = jwtProvider.generateAccessToken(user);
@@ -51,5 +84,19 @@ public class AuthService {
         cookieManager.setRefreshTokenToCookie(response, refreshToken);
 
         return AuthResponseDTO.from(user, accessToken);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void logout(HttpServletResponse response, long userId) {
+        // 유저 정보 획득
+        User user = authRepository.findById(userId)
+                .orElseThrow(() -> new InvalidTokenException("유효하지 않는 회원입니다."));
+        
+        // DB 에 저장한 리프레시 토큰 파기
+        user.setRefreshToken(null);
+        authRepository.save(user);
+
+        // Cookie에 저장한 리프레시 토큰 파기
+        cookieManager.removeRefreshTokenToCookie(response);
     }
 }

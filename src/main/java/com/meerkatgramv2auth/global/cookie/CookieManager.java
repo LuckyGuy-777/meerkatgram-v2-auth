@@ -27,13 +27,36 @@ public class CookieManager {
                 , refreshToken
                 , jwtConfig.refreshTokenCookieExpiry()
                 , jwtConfig.reissueUri()
-
+                // 쿠키 객체
                 // 쿠키이름 가져옴
                 // 리프레시토큰 가져오고
                 // 리프레시토큰 만료시간을 가져옴
                 // 어떤 이슈에서 실행시킬 패턴인가.
         );
     }
+
+    // 쿠키에서 리프레시토큰 제거.
+    public void removeRefreshTokenToCookie(HttpServletResponse response) {
+        this.setCookie(
+                response
+                , jwtConfig.refreshTokenCookieName()
+                , null
+                , 0
+                , jwtConfig.reissueUri()
+
+                //
+                // 쿠키이름 가져옴
+                // 리프레시토큰 을 null 로만듬
+                // 리프레시토큰 만료시간을 가져옴
+                // 어떤 이슈에서 실행시킬 패턴인가.
+        );
+    }
+
+    public Optional<String> getRefreshTokenToCookie(HttpServletRequest request) {
+        return this.getCookie(request, jwtConfig.refreshTokenCookieName())
+                .map(Cookie::getValue); // 해당 쿠키의 값만 Optional 로 가져옴
+    }
+
 
     // Request Header 에서 특정 쿠키를 획득 ( Optinal 반환)
     private Optional<Cookie> getCookie(HttpServletRequest request, String name) {

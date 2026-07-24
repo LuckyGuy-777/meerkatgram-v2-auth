@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
     private static final String BEARER_AUTH = "bearerAuth"; // 토큰인증방식으로 스웨거에서 체크할수 있음.
 
+
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
@@ -21,8 +22,8 @@ public class OpenApiConfig {
                         .description("Meerkatgram REST API 문서입니다.") // 문서 설명
                         .version("1.0.0") // 문서 버전
                 )
-                .components(new Components().addSecuritySchemes(BEARER_AUTH,
-                        new SecurityScheme()
+                .components(new Components()
+                        .addSecuritySchemes(BEARER_AUTH,new SecurityScheme()
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
                                 .bearerFormat("JWT")))
